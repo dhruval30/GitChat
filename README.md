@@ -4,6 +4,9 @@ Paste a GitHub repo URL, and GitChat lets you explore the project and ask questi
 
 ---
 
+**Live:** [https://gitgitchat.netlify.app](https://gitgitchat.netlify.app)
+
+
 ## Demo
 
 ![Demo Screenshot](demo/demo.png)
@@ -26,4 +29,9 @@ Paste a GitHub repo URL, and GitChat lets you explore the project and ask questi
 - Backend does all the work — the frontend serves the purpose for now but still needs fixing.
 
 
-> Work in progress — frontend's basic, backend does the magic. Deployment coming soon.
+## Deployment 
+
+- Backend is hosted on Render
+- Frontend is deployed via Netlify, pulling in the Render backend URL for API calls.
+
+> Everything’s live, connected, and free-tier. Feels good.
