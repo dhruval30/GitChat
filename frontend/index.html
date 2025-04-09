@@ -225,7 +225,7 @@
                 try {
                     addMessage('bot', 'Fetching repository data, please wait...', true);
         
-                    const response = await fetch('http://127.0.0.1:5002/fetch_repo', {
+                    const response = await fetch('http://10.223.215.122:10000/fetch_repo', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ repo_url: repoUrl }),
@@ -284,7 +284,7 @@
                 sendButton.disabled = true;
         
                 try {
-                    const response = await fetch('http://127.0.0.1:5002/ask_question', {
+                    const response = await fetch('http://10.223.215.122:10000/ask_question', {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ question: userMessage }),
@@ -375,7 +375,7 @@
                 filePreviewLoader.style.display = 'flex';
                 filePreviewModal.style.display = 'block';
         
-                fetch('http://127.0.0.1:5002/get_file_content', {
+                fetch('http://10.223.215.122:10000/get_file_content', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ file_path: path }),

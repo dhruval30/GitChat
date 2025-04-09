@@ -15,10 +15,15 @@ from flask_cors import CORS
 from repo2text import get_readme_content, get_file_contents_iteratively
 import re
 
+
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
 
 load_dotenv()
+
+@app.route('/')
+def index():
+    return 'GitChat backend is running.'
 
 # Global variables to store repository data and conversation memory
 repo_data = {}
