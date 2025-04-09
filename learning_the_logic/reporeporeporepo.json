@@ -1,0 +1,30 @@
+{
+    "CNAME": {},
+    "README.md": {},
+    "assets": {
+        "font": {
+            "Inter-VariableFont_slnt,wght.ttf": {}
+        }
+    },
+    "images": {
+        "cloud-download-white.svg": {},
+        "cloud-download.svg": {},
+        "envelope-white.svg": {},
+        "envelope.svg": {},
+        "favicon.ico": {},
+        "favicon.svg": {},
+        "github-white.svg": {},
+        "github.svg": {},
+        "linkedin-white.svg": {},
+        "linkedin.svg": {},
+        "moon-white.svg": {},
+        "moon.svg": {},
+        "play-white.svg": {},
+        "play.svg": {},
+        "sun-white.svg": {},
+        "sun.svg": {}
+    },
+    "index.html": {},
+    "index.js": {},
+    "style.css": {}
+}

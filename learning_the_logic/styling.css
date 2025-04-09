@@ -1,0 +1,85 @@
+/* Basic styles for body and center alignment */
+body {
+    font-family: Arial, sans-serif;
+    margin: 0;
+    padding: 0;
+    background: linear-gradient(45deg, orange, pink);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+}
+
+/* Center container styles */
+.center-container {
+    text-align: center;
+    width: 80%;
+    max-width: 600px;
+}
+
+/* Toggle button styles */
+.toggle-button {
+    background-color: #ff69b4; /* Neon pink */
+    color: black;
+    border: none;
+    padding: 15px 30px;
+    font-size: 18px;
+    cursor: pointer;
+    border-radius: 10px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    transition: background-color 0.3s ease, transform 0.2s;
+    margin: 20px 0;
+}
+
+.toggle-button:hover {
+    background-color: #ff1493; /* Darker neon pink */
+    transform: scale(1.05);
+}
+
+/* Tree view styles */
+.tree-view {
+    margin-top: 20px;
+    display: none;
+    opacity: 0;
+    transition: opacity 0.5s ease;
+    text-align: left;
+    background-color: rgba(255, 255, 255, 0.8);
+    border-radius: 10px;
+    padding: 20px;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+/* Tree list styles */
+.tree-view ul {
+    list-style-type: none;
+    padding: 0;
+    margin: 0;
+}
+
+.tree-view li {
+    margin: 10px 0;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.tree-view li ul {
+    display: none;
+    margin-top: 5px;
+    padding-left: 20px;
+}
+
+.tree-view li ul li {
+    font-weight: normal;
+    cursor: default;
+}
+
+/* Style for the expandable items */
+.expandable:before {
+    content: '▶ ';
+    display: inline-block;
+    transition: transform 0.3s ease;
+}
+
+.expandable.expanded:before {
+    transform: rotate(90deg);
+}

@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GitChat - Understand repositories through conversation</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <header>
+        <div class="container">
+            <div class="header-content">
+                <div class="logo">
+                    <i class="fab fa-github"></i>
+                    <span>GitChat</span>
+                </div>
+                <div class="tagline">Understand repositories through conversation</div>
+            </div>
+        </div>
+    </header>
+    
+    <div class="main">
+        <div class="sidebar">
+            <div class="repo-input-container">
+                <label class="input-label" for="repoInput">GitHub Repository URL</label>
+                <input type="text" id="repoInput" class="repo-input" placeholder="https://github.com/username/repo" autocomplete="off">
+                <button id="repoInputButton" class="fetch-btn">
+                    <i class="fas fa-code-branch"></i>
+                    Fetch Repository
+                </button>
+                <div id="repoError" class="error-message" style="display: none;"></div>
+            </div>
+            
+            <div class="repo-info" id="repoInfo" style="display: none;">
+                <div class="info-section">
+                    <h3>Repository Details</h3>
+                    <div class="info-content" id="repoDetails">
+                        <!-- Repository details will be shown here -->
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="chat">
+            <div class="chat-header">
+                <div class="status">
+                    <div id="statusDot" class="status-dot disconnected"></div>
+                    <div id="statusText" class="status-text">Repository not loaded</div>
+                </div>
+            </div>
+            
+            <div class="messages" id="messages">
+                <div class="message bot-message">
+                    <div class="message-avatar">
+                        <i class="fas fa-robot"></i>
+                    </div>
+                    <div class="message-content">
+                        <div class="markdown-content">
+                            👋 Welcome to GitChat! Fetch a GitHub repository to get started.
+                            
+                            I'll help you understand the repository structure, code, and functionality through conversation.
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="chat-input-container">
+                <input type="text" id="userInput" class="chat-input" placeholder="Ask about the repository..." disabled>
+                <button id="sendButton" class="send-btn" disabled>
+                    <i class="fas fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener("DOMContentLoaded", () => {
+            const repoInput = document.getElementById("repoInput");
+            const repoInputButton = document.getElementById("repoInputButton");
+            const userInput = document.getElementById("userInput");
+            const sendButton = document.getElementById("sendButton");
+            const messagesContainer = document.getElementById("messages");
+            const statusDot = document.getElementById("statusDot");
+            const statusText = document.getElementById("statusText");
+            const repoError = document.getElementById("repoError");
+            const repoInfo = document.getElementById("repoInfo");
+            const repoDetails = document.getElementById("repoDetails");
+            
+            let repoDataLoaded = false;
+            let isWaitingForResponse = false;
+            
+            // Implement a simple Markdown parser
+            function parseMarkdown(text) {
+                // Convert code blocks
+                text = text.replace(/```(\w+)?\n([\s\S]*?)\n```/g, '<pre><code>$2</code></pre>');
+                
+                // Convert inline code
+                text = text.replace(/`([^`]+)`/g, '<code>$1</code>');
+                
+                // Convert bold
+                text = text.replace(/\*\*([^*]+)\*\*/g, '<strong>$1</strong>');
+                
+                // Convert italic
+                text = text.replace(/\*([^*]+)\*/g, '<em>$1</em>');
+                
+                // Convert line breaks
+                text = text.replace(/\n/g, '<br>');
+                
+                return text;
+            }
+            
+            // Function to add messages to the chat area
+            const addMessage = (sender, message, isMarkdown = true) => {
+                // Don't add empty messages
+                if (!message.trim()) return;
+                
+                const messageElement = document.createElement("div");
+                messageElement.className = `message ${sender}-message`;
+                
+                const avatarElement = document.createElement("div");
+                avatarElement.className = "message-avatar";
+                
+                // Different icons for user and bot
+                const iconElement = document.createElement("i");
+                iconElement.className = sender === "user" ? "fas fa-user" : "fas fa-robot";
+                avatarElement.appendChild(iconElement);
+                
+                const contentElement = document.createElement("div");
+                contentElement.className = "message-content";
+                
+                const textElement = document.createElement("div");
+                textElement.className = "markdown-content";
+                textElement.innerHTML = isMarkdown ? parseMarkdown(message) : message;
+                
+                contentElement.appendChild(textElement);
+                messageElement.appendChild(avatarElement);
+                messageElement.appendChild(contentElement);
+                
+                messagesContainer.appendChild(messageElement);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight; // Scroll to the bottom
+            };
+            
+            // Function to show typing indicator
+            const showTypingIndicator = () => {
+                const indicator = document.createElement("div");
+                indicator.className = "typing-indicator";
+                indicator.id = "typingIndicator";
+                
+                for (let i = 0; i < 3; i++) {
+                    const dot = document.createElement("div");
+                    dot.className = "typing-dot";
+                    indicator.appendChild(dot);
+                }
+                
+                messagesContainer.appendChild(indicator);
+                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+            };
+            
+            // Function to remove typing indicator
+            const removeTypingIndicator = () => {
+                const indicator = document.getElementById("typingIndicator");
+                if (indicator) {
+                    indicator.remove();
+                }
+            };
+            
+            // Update UI state
+            const updateUIState = (state) => {
+                if (state === "loading") {
+                    repoInputButton.innerHTML = '<span class="loader"></span>';
+                    repoInputButton.disabled = true;
+                    repoInput.disabled = true;
+                } else if (state === "ready") {
+                    repoInputButton.innerHTML = '<i class="fas fa-code-branch"></i> Fetch Repository';
+                    repoInputButton.disabled = false;
+                    repoInput.disabled = false;
+                } else if (state === "connected") {
+                    statusDot.className = "status-dot connected";
+                    statusText.innerText = "Repository loaded";
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                    repoDataLoaded = true;
+                } else if (state === "error") {
+                    repoInputButton.innerHTML = '<i class="fas fa-code-branch"></i> Fetch Repository';
+                    repoInputButton.disabled = false;
+                    repoInput.disabled = false;
+                    statusDot.className = "status-dot disconnected";
+                    statusText.innerText = "Error loading repository";
+                }
+            };
+            
+            // Fetch repository data from Flask
+            const fetchRepoData = async () => {
+                const repoUrl = repoInput.value.trim();
+                if (!repoUrl) {
+                    repoError.innerText = 'Please enter a valid GitHub repository URL.';
+                    repoError.style.display = 'block';
+                    return;
+                }
+                
+                // Hide previous error messages
+                repoError.style.display = 'none';
+                
+                // Update UI to loading state
+                updateUIState("loading");
+                
+                try {
+                    addMessage('bot', 'Fetching repository data, please wait. This might take a few moments depending on the repository size...', true);
+                    
+                    const response = await fetch('http://127.0.0.1:5002/fetch_repo', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ repo_url: repoUrl }),
+                    });
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.error || 'Failed to fetch repository data';
+                        
+                        // Show error in UI
+                        repoError.innerText = errorMessage;
+                        repoError.style.display = 'block';
+                        
+                        addMessage('bot', `Error: ${errorMessage}`, true);
+                        updateUIState("error");
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    
+                    // Add success message to chat
+                    addMessage('bot', 'Repository data fetched successfully! I\'m ready to help you understand this codebase. What would you like to know?', true);
+                    
+                    // Update UI state
+                    updateUIState("connected");
+                    
+                    // Display repo name and description
+                    repoInfo.style.display = 'block';
+                    
+                    // Extract repo name from URL
+                    const repoName = repoUrl.split('/').slice(-2).join('/');
+                    
+                    // Update repo details
+                    repoDetails.innerHTML = `<strong>${repoName}</strong><br>Repository successfully loaded and ready for questions.`;
+                    
+                } catch (error) {
+                    console.error("Error fetching repo data:", error);
+                    
+                    // Show error in UI
+                    repoError.innerText = 'An error occurred while fetching the repository data.';
+                    repoError.style.display = 'block';
+                    
+                    addMessage('bot', 'An error occurred while fetching the repository data. Please check your URL and try again.', true);
+                    updateUIState("error");
+                }
+            };
+            
+            // Ask a question to the chatbot
+            const askQuestion = async () => {
+                const userMessage = userInput.value.trim();
+                if (!userMessage || isWaitingForResponse) {
+                    return;
+                }
+                
+                if (!repoDataLoaded) {
+                    addMessage('bot', 'Please fetch a repository first before asking questions.', true);
+                    return;
+                }
+                
+                // Add user message to chat
+                addMessage('user', userMessage, false);
+                
+                // Clear input field
+                userInput.value = "";
+                
+                // Show typing indicator
+                showTypingIndicator();
+                isWaitingForResponse = true;
+                
+                // Disable input while waiting
+                userInput.disabled = true;
+                sendButton.disabled = true;
+                
+                try {
+                    const response = await fetch('http://127.0.0.1:5002/ask_question', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ question: userMessage }),
+                    });
+                    
+                    // Remove typing indicator
+                    removeTypingIndicator();
+                    isWaitingForResponse = false;
+                    
+                    // Re-enable input
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                    userInput.focus();
+                    
+                    if (!response.ok) {
+                        const errorData = await response.json();
+                        const errorMessage = errorData.error || 'Failed to get response';
+                        addMessage('bot', `Error: ${errorMessage}`, true);
+                        return;
+                    }
+                    
+                    const data = await response.json();
+                    // Accept both formats: data.answer or data.response
+                    const botResponse = data.answer || data.response || "No response received";
+                    addMessage('bot', botResponse, true);
+                } catch (error) {
+                    console.error("Error asking question:", error);
+                    
+                    // Remove typing indicator
+                    removeTypingIndicator();
+                    isWaitingForResponse = false;
+                    
+                    // Re-enable input
+                    userInput.disabled = false;
+                    sendButton.disabled = false;
+                    
+                    addMessage('bot', 'An error occurred while asking the question. Please try again.', true);
+                }
+            };
+            
+            // Event listeners
+            repoInputButton.addEventListener("click", fetchRepoData);
+            sendButton.addEventListener("click", askQuestion);
+            
+            // Allow pressing Enter to send a question
+            userInput.addEventListener("keypress", (event) => {
+                if (event.key === "Enter") {
+                    askQuestion();
+                }
+            });
+            
+            // Also allow pressing Enter to fetch repo data
+            repoInput.addEventListener("keypress", (event) => {
+                if (event.key === "Enter") {
+                    fetchRepoData();
+                }
+            });
+            
+            // Focus on repo input on page load
+            repoInput.focus();
+        });
+    </script>
+</body>
+</html>
