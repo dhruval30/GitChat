@@ -419,3 +419,313 @@ header {
         max-width: 95%;
     }
 }
+
+/* Repository Tree View */
+.tree-view-container {
+    background-color: var(--background);
+    border-radius: 0.5rem;
+    border: 1px solid var(--border);
+    overflow: hidden;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+    margin-bottom: 1.5rem;
+}
+
+.tree-controls {
+    display: flex;
+    justify-content: space-between;
+    padding: 0.5rem;
+    background-color: rgba(0, 0, 0, 0.2);
+    border-bottom: 1px solid var(--border);
+}
+
+.tree-control-btn {
+    background-color: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    cursor: pointer;
+    padding: 0.25rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: all 0.2s ease;
+}
+
+.tree-control-btn:hover {
+    color: var(--text);
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tree-control-btn i {
+    margin-right: 0.25rem;
+}
+
+.repo-tree {
+    padding: 0.75rem;
+    max-height: 400px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    font-size: 0.85rem;
+}
+
+.tree-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    padding: 2rem 0;
+}
+
+.tree-placeholder i {
+    margin-right: 0.5rem;
+    font-size: 1.25rem;
+}
+
+.tree-item {
+    margin-bottom: 0.25rem;
+    position: relative;
+}
+
+.tree-folder {
+    cursor: pointer;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.5rem;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.tree-folder:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tree-folder i.folder-icon {
+    color: var(--primary);
+    width: 1.25rem;
+}
+
+.tree-folder i.toggle-icon {
+    color: var(--text-muted);
+    margin-right: 0.5rem;
+    width: 0.75rem;
+    transition: transform 0.2s;
+}
+
+.tree-folder.expanded i.toggle-icon {
+    transform: rotate(90deg);
+}
+
+.tree-folder-name {
+    margin-left: 0.25rem;
+    flex: 1;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-file {
+    display: flex;
+    align-items: center;
+    padding: 0.35rem 0.5rem 0.35rem 2.25rem;
+    cursor: pointer;
+    border-radius: 0.25rem;
+    transition: background-color 0.2s;
+}
+
+.tree-file:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+}
+
+.tree-file i {
+    color: var(--secondary);
+    margin-right: 0.5rem;
+    width: 1rem;
+}
+
+.tree-file-name {
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.tree-children {
+    margin-left: 1rem;
+    padding-left: 0.5rem;
+    border-left: 1px dashed rgba(255, 255, 255, 0.1);
+    display: none;
+}
+
+.tree-children.expanded {
+    display: block;
+}
+
+/* File icons by extension */
+.icon-js { color: #f7df1e !important; }
+.icon-html { color: #e34c26 !important; }
+.icon-css { color: #264de4 !important; }
+.icon-py { color: #3572A5 !important; }
+.icon-json { color: #f69a1b !important; }
+.icon-md { color: #66b3ff !important; }
+.icon-img { color: #ff6b6b !important; }
+
+/* File Preview Modal */
+.file-preview-modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.7);
+    z-index: 1000;
+    animation: fadeIn 0.3s;
+}
+
+@keyframes fadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+
+.file-preview-content {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 80%;
+    max-width: 1000px;
+    height: 80%;
+    background-color: var(--card-bg);
+    border-radius: 0.5rem;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.file-preview-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1rem;
+    border-bottom: 1px solid var(--border);
+    background-color: rgba(0, 0, 0, 0.2);
+}
+
+.file-preview-header h3 {
+    margin: 0;
+    font-size: 1rem;
+    color: var(--text);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.file-preview-close {
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    font-size: 1.25rem;
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.file-preview-close:hover {
+    color: var(--danger);
+}
+
+.file-preview-body {
+    flex: 1;
+    overflow: auto;
+    padding: 0;
+    position: relative;
+}
+
+.file-preview-body pre {
+    margin: 0;
+    padding: 1rem;
+    height: 100%;
+    overflow: auto;
+    font-family: 'Fira Code', 'Consolas', monospace;
+    font-size: 0.9rem;
+    line-height: 1.5;
+    tab-size: 4;
+    background-color: var(--card-bg);
+}
+
+.file-preview-body code {
+    color: var(--text);
+    padding: 0;
+    background: transparent;
+}
+
+.file-preview-loader {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: rgba(17, 24, 39, 0.7);
+}
+
+/* Responsive adjustments */
+@media (max-width: 992px) {
+    .file-preview-content {
+        width: 90%;
+        height: 90%;
+    }
+}
+
+@media (max-width: 768px) {
+    .tree-view-container {
+        margin-bottom: 1rem;
+    }
+    
+    .repo-tree {
+        max-height: 300px;
+    }
+    
+    .file-preview-content {
+        width: 95%;
+    }
+}
+
+@media (max-width: 576px) {
+    .tree-controls {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .file-preview-header {
+        padding: 0.75rem;
+    }
+    
+    .file-preview-header h3 {
+        font-size: 0.9rem;
+    }
+}
+
+/* Scrollbar styling for repo tree and file preview */
+.repo-tree::-webkit-scrollbar,
+.file-preview-body pre::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.repo-tree::-webkit-scrollbar-track,
+.file-preview-body pre::-webkit-scrollbar-track {
+    background: rgba(0, 0, 0, 0.1);
+    border-radius: 4px;
+}
+
+.repo-tree::-webkit-scrollbar-thumb,
+.file-preview-body pre::-webkit-scrollbar-thumb {
+    background: rgba(255, 255, 255, 0.2);
+    border-radius: 4px;
+}
+
+.repo-tree::-webkit-scrollbar-thumb:hover,
+.file-preview-body pre::-webkit-scrollbar-thumb:hover {
+    background: rgba(255, 255, 255, 0.3);
+}

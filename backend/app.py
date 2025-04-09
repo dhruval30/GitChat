@@ -12,7 +12,8 @@ from langchain.chains.conversation.memory import ConversationBufferWindowMemory
 from langchain_groq import ChatGroq
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from flask_cors import CORS
-from repo2text import get_readme_content, traverse_repo_iteratively, get_file_contents_iteratively
+from repo2text import get_readme_content, get_file_contents_iteratively
+import re
 
 app = Flask(__name__)
 CORS(app, resources={r"/*": {"origins": "*"}})
@@ -42,18 +43,172 @@ def fetch_repo_data(repo_url):
         readme = get_readme_content(repo)
         
         print(f"Fetching repository structure")
-        structure = traverse_repo_iteratively(repo)
+        structure = get_hierarchical_structure(repo)
         
         print(f"Fetching file contents")
         file_contents = get_file_contents_iteratively(repo)
         
         return {
             "readme": readme if readme else "No README found.",
-            "structure": structure if structure else "No structure information found.",
+            "structure": structure,
+            "hierarchical_structure": structure['tree'],
             "file_contents": file_contents if file_contents else "No file contents found."
         }
     except Exception as e:
         raise ValueError(f"Failed to fetch repository: {str(e)}")
+
+def get_hierarchical_structure(repo):
+    """Get hierarchical structure of the repository."""
+    try:
+        contents = repo.get_contents("")
+        tree = {}
+        flat_list = []
+        
+        def process_contents(contents, path="", parent=None):
+            for content in contents:
+                if content.type == "dir":
+                    # For directories
+                    dir_path = os.path.join(path, content.name) if path else content.name
+                    dir_node = {
+                        "name": content.name,
+                        "path": dir_path,
+                        "type": "directory",
+                        "children": []
+                    }
+                    
+                    # Add to flat list
+                    flat_list.append({
+                        "name": content.name,
+                        "path": dir_path,
+                        "type": "directory",
+                        "parent": parent
+                    })
+                    
+                    # Add to hierarchical tree
+                    if parent is None:
+                        tree[content.name] = dir_node
+                    else:
+                        # Find parent node
+                        if parent in tree:
+                            tree[parent]["children"].append(dir_node)
+                        else:
+                            # Navigate the tree to find the parent
+                            def find_and_add_to_parent(node_dict):
+                                for key, node in node_dict.items():
+                                    if key == parent:
+                                        node["children"].append(dir_node)
+                                        return True
+                                    elif node.get("type") == "directory" and node.get("children"):
+                                        if find_and_add_to_parent({"temp": node}):
+                                            return True
+                                    elif isinstance(node, dict) and "children" in node:
+                                        if find_and_add_to_parent({key: child for key, child in enumerate(node["children"])}):
+                                            return True
+                                return False
+                            
+                            find_and_add_to_parent(tree)
+                    
+                    # Process subdirectory
+                    try:
+                        subcontents = repo.get_contents(dir_path)
+                        process_contents(subcontents, dir_path, content.name)
+                    except Exception as e:
+                        print(f"Error processing subdirectory {dir_path}: {str(e)}")
+                
+                else:
+                    # For files
+                    file_path = os.path.join(path, content.name) if path else content.name
+                    file_node = {
+                        "name": content.name,
+                        "path": file_path,
+                        "type": "file",
+                        "size": content.size,
+                        "url": content.html_url
+                    }
+                    
+                    # Add to flat list
+                    flat_list.append({
+                        "name": content.name,
+                        "path": file_path,
+                        "type": "file",
+                        "size": content.size,
+                        "url": content.html_url,
+                        "parent": parent
+                    })
+                    
+                    # Add to hierarchical tree
+                    if parent is None:
+                        tree[content.name] = file_node
+                    else:
+                        # Find parent node
+                        if parent in tree:
+                            tree[parent]["children"].append(file_node)
+                        else:
+                            # Navigate the tree to find the parent
+                            def find_and_add_to_parent(node_dict):
+                                for key, node in node_dict.items():
+                                    if key == parent:
+                                        node["children"].append(file_node)
+                                        return True
+                                    elif node.get("type") == "directory" and node.get("children"):
+                                        if find_and_add_to_parent({"temp": node}):
+                                            return True
+                                    elif isinstance(node, dict) and "children" in node:
+                                        if find_and_add_to_parent({key: child for key, child in enumerate(node["children"])}):
+                                            return True
+                                return False
+                            
+                            find_and_add_to_parent(tree)
+        
+        process_contents(contents)
+        
+        # Create a textual representation for the traditional structure
+        text_structure = format_structure_text(flat_list)
+        
+        return {
+            "tree": tree,
+            "flat_list": flat_list,
+            "text": text_structure
+        }
+    
+    except Exception as e:
+        print(f"Error getting repository structure: {str(e)}")
+        return {
+            "tree": {},
+            "flat_list": [],
+            "text": "Error retrieving repository structure."
+        }
+
+def format_structure_text(flat_list):
+    """Format the flat structure list into a readable text format."""
+    result = []
+    
+    # Group items by parent
+    grouped = {}
+    for item in flat_list:
+        parent = item.get("parent", None)
+        if parent not in grouped:
+            grouped[parent] = []
+        grouped[parent].append(item)
+    
+    def get_indent(depth):
+        return "  " * depth
+    
+    def process_level(parent, depth=0):
+        if parent not in grouped:
+            return
+        
+        for item in grouped[parent]:
+            prefix = "📁" if item["type"] == "directory" else "📄"
+            result.append(f"{get_indent(depth)}{prefix} {item['name']}")
+            
+            if item["type"] == "directory" and item["name"] in grouped:
+                process_level(item["name"], depth + 1)
+    
+    # Start with root level (parent = None)
+    process_level(None)
+    
+    return "\n".join(result)
 
 def create_compressed_repo_info(repo_data, max_tokens=4000):
     """Create a compressed version of repo info that fits within token limits."""
@@ -66,7 +221,7 @@ def create_compressed_repo_info(repo_data, max_tokens=4000):
     
     # Format the repo data with section headers
     readme_section = f"README:\n{repo_data['readme']}"
-    structure_section = f"REPOSITORY STRUCTURE:\n{repo_data['structure']}"
+    structure_section = f"REPOSITORY STRUCTURE:\n{repo_data['structure']['text']}"
     file_contents_section = f"FILE CONTENTS:\n{repo_data['file_contents']}"
     
     # If the combined data is likely to exceed token limits, prioritize and trim
@@ -104,11 +259,42 @@ def fetch_repository():
         repo_data = fetch_repo_data(repo_url)
         # Reset conversation memory when switching repositories
         memory = ConversationBufferWindowMemory(k=5, memory_key="chat_history", return_messages=True)
-        return jsonify({"message": "Repository data fetched successfully"}), 200
+        return jsonify({
+            "message": "Repository data fetched successfully",
+            "repo_structure": repo_data["hierarchical_structure"]
+        }), 200
     except ValueError as ve:
         return jsonify({"error": str(ve)}), 400
     except Exception as e:
         return jsonify({"error": f"An unexpected error occurred: {str(e)}"}), 500
+
+@app.route('/get_file_content', methods=['POST'])
+def get_file_content():
+    """Endpoint to fetch a specific file's content."""
+    if not repo_data:
+        return jsonify({"error": "Repository data not loaded. Please fetch a repository first."}), 400
+    
+    data = request.json
+    file_path = data.get('file_path')
+    
+    if not file_path:
+        return jsonify({"error": "File path is required"}), 400
+    
+    try:
+        # Extract file content from the stored file_contents
+        file_contents_text = repo_data["file_contents"]
+        
+        # Search for the file content using a pattern
+        pattern = f"FILE: {re.escape(file_path)}\n(.*?)(?=\nFILE:|$)"
+        match = re.search(pattern, file_contents_text, re.DOTALL)
+        
+        if match:
+            content = match.group(1).strip()
+            return jsonify({"content": content}), 200
+        else:
+            return jsonify({"error": f"File content not found for: {file_path}"}), 404
+    except Exception as e:
+        return jsonify({"error": f"Error retrieving file content: {str(e)}"}), 500
 
 @app.route('/ask_question', methods=['POST'])
 def ask_question():
@@ -162,7 +348,7 @@ def ask_question():
             try:
                 # create an even more compressed version with only README and structure
                 readme_section = f"README:\n{repo_data['readme']}"
-                structure_section = f"REPOSITORY STRUCTURE:\n{repo_data['structure']}"
+                structure_section = f"REPOSITORY STRUCTURE:\n{repo_data['structure']['text']}"
                 minimal_repo_info = f"{readme_section}\n\n{structure_section}"
                 
                 prompt = ChatPromptTemplate.from_messages(
