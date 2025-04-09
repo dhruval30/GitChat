@@ -1,0 +1,9 @@
+Flask
+flask-cors
+python-dotenv
+PyGithub
+tqdm
+langchain
+langchain-groq
+langchain-core
+langchain-text-splitters
