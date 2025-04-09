@@ -5,6 +5,7 @@ Paste a GitHub repo URL, and GitChat lets you explore the project and ask questi
 ---
 
 **Live:** [https://gitgitchat.netlify.app](https://gitgitchat.netlify.app)
+Large repos might take their time. This thing’s powered by 0.1 CPU and 512MB RAM
 
 
 ## Demo
