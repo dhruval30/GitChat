@@ -37,3 +37,6 @@ Won't be the best experience running this on mobiles too, I promise I'll fix tha
 - Frontend is deployed via Netlify, pulling in the Render backend URL for API calls.
 
 > Everything’s live, connected, and free-tier. Feels good.
+
+
+# PS. a user signup coming up so you can have your previous conversations stored, very soon.
